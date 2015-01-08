@@ -1,0 +1,8 @@
+*.pyc
+*.root
+__*__.py*
+.gdb_history
+*.png
+*.history
+*.d
+*.so

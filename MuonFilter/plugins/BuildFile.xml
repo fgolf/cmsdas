@@ -3,6 +3,4 @@
 <use name="FWCore/ParameterSet"/>
 <use name="clhep"/>
 <use name="DataFormats/PatCandidates"/>
-<use name="PhysicsTools/UtilAlgos"/>
-<use name="FWCore/ServiceRegistry"/>
 <flags EDM_PLUGIN="1"/>
