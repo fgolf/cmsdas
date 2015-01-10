@@ -45,56 +45,13 @@
 
 #include "TH1.h"
 
-typedef math::XYZTLorentzVector LorentzVector;
+#include "cmsdas/MuonShortExercise/plugins/MSETools.h"
 
 //
 // some useful functions
 //
 //===============================================================================
 
-bool isBHadron( int pdgId ) {
-   bool retval = false ;
-   int thirdDigit = (abs(pdgId) / 100) % 10 ;
-   if ( thirdDigit == 5 ) retval = true ; // should catch all B mesons
-   int fourthDigit = (abs(pdgId) / 1000) % 10 ;
-   if ( fourthDigit == 5 ) retval = true ; // should catch all B baryons
-   // int secondDigit = (abs(pdgId) / 10) % 10 ;
-   // if ( secondDigit == 5 && thirdDigit == 5 ) retval = false ; // do not count bottomonium (b bbar mesons).
-   return retval ;
-} // isBHadron
-
-//===============================================================================
-
-bool decaysToB( const reco::GenParticle& gp ) {
-   for ( size_t di=0; di<gp.numberOfDaughters(); di++ ) {
-       const reco::Candidate* dau = gp.daughter( di ) ; 
-      if ( isBHadron( dau->pdgId() ) ) return true ;
-   } // di
-   return false ;
-} // decaysToB
-
-//===============================================================================
-
-bool isCHadron( int pdgId ) {
-   bool retval = false ;
-   int thirdDigit = (abs(pdgId) / 100) % 10 ;
-   if ( thirdDigit == 4 ) retval = true ; // should catch all B mesons
-   int fourthDigit = (abs(pdgId) / 1000) % 10 ;
-   if ( fourthDigit == 4  ) retval = true ; // should catch all B baryons
-   // int secondDigit = (abs(pdgId) / 10) % 10 ;
-   // if ( secondDigit == 5 && thirdDigit == 5 ) retval = false ; // do not count bottomonium (b bbar mesons).
-   return retval ;
-} // isCHadron
-
-//===============================================================================
-
-bool decaysToC( const reco::GenParticle& gp ) {
-   for ( size_t di=0; di<gp.numberOfDaughters(); di++ ) {
-       const reco::Candidate* dau = gp.daughter( di ) ; 
-      if ( isCHadron( dau->pdgId() ) ) return true ;
-   } // di
-   return false ;
-} // decaysToC
 
 //===============================================================================
 
@@ -123,14 +80,6 @@ private:
     //virtual void endLuminosityBlock(edm::LuminosityBlock const&, edm::EventSetup const&) override;
 
     // ----------member data ---------------------------
-    enum MuonParentage {PROMPT, HF, LF, NOT_A_MUON, NMU_PAR_TYPES};
-    static const char* enumNames[];
-    
-    const pat::PackedGenParticle getMatchedGenParticle(const pat::Muon&, const std::vector<pat::PackedGenParticle>&);
-    const reco::GenParticle getMotherPacked(const pat::PackedGenParticle&);
-    const reco::GenParticle getMother(const reco::GenParticle&);
-    MuonParentage getParentType(const reco::GenParticle&);
-
     edm::InputTag muonInputTag;
     edm::InputTag genInputTag;
     edm::InputTag vertexInputTag;
@@ -157,7 +106,6 @@ private:
 //
 // static data member definitions
 //
-const char* MuonShortExercise::enumNames[] = {"prompt", "hf", "lf", "other"};
 
 
 //
@@ -173,21 +121,21 @@ MuonShortExercise::MuonShortExercise(const edm::ParameterSet& iConfig)
 
     edm::Service<TFileService> fs;
     
-    for (unsigned int idx = 0; idx < MuonParentage::NMU_PAR_TYPES; idx++)
+    for (unsigned int idx = 0; idx < mse::MuonParentage::NMU_PAR_TYPES; idx++)
     {
-        h_pt[idx]        = fs->make<TH1F>(Form("h_pt_%s", enumNames[idx]), Form("h_pt_%s", enumNames[idx]), 20, 0, 100);
-        h_eta[idx]       = fs->make<TH1F>(Form("h_eta_%s", enumNames[idx]), Form("h_eta_%s", enumNames[idx]), 25, -2.5, 2.5);
-        h_nchi2[idx]     = fs->make<TH1F>(Form("h_nchi2_%s", enumNames[idx]), Form("h_nchi2_%s", enumNames[idx]), 55, 0, 11);
-        h_nhits[idx]     = fs->make<TH1F>(Form("h_nhits_%s", enumNames[idx]), Form("h_nhits_%s", enumNames[idx]), 40, -0.5, 39.5);
-        h_nstations[idx] = fs->make<TH1F>(Form("h_nstations_%s", enumNames[idx]), Form("h_nstations_%s", enumNames[idx]), 6, -0.5, 5.5);
-        h_npixels[idx]   = fs->make<TH1F>(Form("h_npixels_%s", enumNames[idx]), Form("h_npixels_%s", enumNames[idx]), 6, -0.5, 5.5);
-        h_nlayers[idx]   = fs->make<TH1F>(Form("h_nlayers_%s", enumNames[idx]), Form("h_nlayers_%s", enumNames[idx]), 25, -0.5, 24.5);
-        h_d0[idx]        = fs->make<TH1F>(Form("h_d0_%s", enumNames[idx]), Form("h_d0_%s", enumNames[idx]), 40, -0.10, 0.11);
-        h_chiso[idx]     = fs->make<TH1F>(Form("h_chiso_%s", enumNames[idx]), Form("h_chiso_%s", enumNames[idx]), 20, 0, 10);
-        h_nhiso[idx]     = fs->make<TH1F>(Form("h_nhiso_%s", enumNames[idx]), Form("h_nhiso_%s", enumNames[idx]), 20, 0, 10);
-        h_emiso[idx]     = fs->make<TH1F>(Form("h_emiso_%s", enumNames[idx]), Form("h_emiso_%s", enumNames[idx]), 20, 0, 10);
-        h_puiso[idx]     = fs->make<TH1F>(Form("h_puiso_%s", enumNames[idx]), Form("h_puiso_%s", enumNames[idx]), 20, 0, 10);
-        h_coriso[idx]    = fs->make<TH1F>(Form("h_coriso_%s", enumNames[idx]), Form("h_coriso_%s", enumNames[idx]), 30, 0, 0.3);
+        h_pt[idx]        = fs->make<TH1F>(Form("h_pt_%s", mse::enumNames[idx]), Form("h_pt_%s", mse::enumNames[idx]), 20, 0, 100);
+        h_eta[idx]       = fs->make<TH1F>(Form("h_eta_%s", mse::enumNames[idx]), Form("h_eta_%s", mse::enumNames[idx]), 25, -2.5, 2.5);
+        h_nchi2[idx]     = fs->make<TH1F>(Form("h_nchi2_%s", mse::enumNames[idx]), Form("h_nchi2_%s", mse::enumNames[idx]), 55, 0, 11);
+        h_nhits[idx]     = fs->make<TH1F>(Form("h_nhits_%s", mse::enumNames[idx]), Form("h_nhits_%s", mse::enumNames[idx]), 40, -0.5, 39.5);
+        h_nstations[idx] = fs->make<TH1F>(Form("h_nstations_%s", mse::enumNames[idx]), Form("h_nstations_%s", mse::enumNames[idx]), 6, -0.5, 5.5);
+        h_npixels[idx]   = fs->make<TH1F>(Form("h_npixels_%s", mse::enumNames[idx]), Form("h_npixels_%s", mse::enumNames[idx]), 6, -0.5, 5.5);
+        h_nlayers[idx]   = fs->make<TH1F>(Form("h_nlayers_%s", mse::enumNames[idx]), Form("h_nlayers_%s", mse::enumNames[idx]), 25, -0.5, 24.5);
+        h_d0[idx]        = fs->make<TH1F>(Form("h_d0_%s", mse::enumNames[idx]), Form("h_d0_%s", mse::enumNames[idx]), 40, -0.10, 0.11);
+        h_chiso[idx]     = fs->make<TH1F>(Form("h_chiso_%s", mse::enumNames[idx]), Form("h_chiso_%s", mse::enumNames[idx]), 20, 0, 10);
+        h_nhiso[idx]     = fs->make<TH1F>(Form("h_nhiso_%s", mse::enumNames[idx]), Form("h_nhiso_%s", mse::enumNames[idx]), 20, 0, 10);
+        h_emiso[idx]     = fs->make<TH1F>(Form("h_emiso_%s", mse::enumNames[idx]), Form("h_emiso_%s", mse::enumNames[idx]), 20, 0, 10);
+        h_puiso[idx]     = fs->make<TH1F>(Form("h_puiso_%s", mse::enumNames[idx]), Form("h_puiso_%s", mse::enumNames[idx]), 20, 0, 10);
+        h_coriso[idx]    = fs->make<TH1F>(Form("h_coriso_%s", mse::enumNames[idx]), Form("h_coriso_%s", mse::enumNames[idx]), 30, 0, 0.3);
     }
 }
 
@@ -220,68 +168,6 @@ MuonShortExercise::~MuonShortExercise()
 // member functions
 //
 
-const pat::PackedGenParticle MuonShortExercise::getMatchedGenParticle(const pat::Muon& muon, const std::vector<pat::PackedGenParticle>& gpcol)
-{
-    LorentzVector mup4(muon.p4());    
-    double minDR = 999.;
-    std::vector<pat::PackedGenParticle>::const_iterator gen_end = gpcol.end();
-    pat::PackedGenParticle matched_gen;
-    for (std::vector<pat::PackedGenParticle>::const_iterator it = gpcol.begin(); it != gen_end; it++)
-    {
-        LorentzVector gp4(it->p4());
-        double dr = ROOT::Math::VectorUtil::DeltaR(mup4, gp4);
-        if (dr < 0.1 && abs(it->pdgId()) == 13) return (*it);
-        if (dr < minDR)
-        {
-            minDR = dr;
-            matched_gen = *it;
-        }
-    }
-
-    if (minDR < 0.1) return matched_gen;
-    return pat::PackedGenParticle();
-}
-
-const reco::GenParticle MuonShortExercise::getMotherPacked(const pat::PackedGenParticle& pgp)
-{
-    if (pgp.numberOfMothers() > 0)
-    {        
-        const reco::GenParticle* firstMother = (const reco::GenParticle*)pgp.mother(0);
-        if (firstMother != 0)
-        {
-            if (firstMother->pdgId() != pgp.pdgId()) return (*firstMother);
-            const reco::GenParticle newMother = MuonShortExercise::getMother(*firstMother);
-            return newMother;
-        }
-        else return reco::GenParticle();
-    }
-
-    return reco::GenParticle();
-}
-
-const reco::GenParticle MuonShortExercise::getMother(const reco::GenParticle& gp)
-{
-    const reco::GenParticle* mom = &gp;
-    while (mom->numberOfMothers() > 0)
-    {
-        for (unsigned int idx = 0; idx < mom->numberOfMothers(); idx++)
-        {
-            mom = dynamic_cast<const reco::GenParticle*>(mom->mother(idx));
-            if (mom->pdgId() != gp.pdgId())
-                return (*mom);
-        }
-    }
-
-    return (*mom);
-}
-
-MuonShortExercise::MuonParentage MuonShortExercise::getParentType(const reco::GenParticle& gp)
-{
-    unsigned int pdgId = abs(gp.pdgId());
-    if (pdgId == 15 || pdgId == 23 || pdgId == 24 || pdgId == 25) return MuonParentage::PROMPT;
-    if (isBHadron(pdgId) || isCHadron(pdgId)) return MuonParentage::HF;    
-    return MuonShortExercise::MuonParentage::LF;
-}
 
 // ------------ method called for each event  ------------
 void
@@ -299,10 +185,7 @@ MuonShortExercise::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
     reco::VertexCollection::const_iterator firstGoodVertex = vtx_h->end();
     for (reco::VertexCollection::const_iterator it = vtx_h->begin(); it != firstGoodVertex; it++)
     {
-        if (it->isFake()) continue;
-        if (it->ndof() < 4) continue;
-        if (it->position().Rho() > 2.) continue;
-        if (fabs(it->position().Z()) > 24.) continue;
+        mse::isGoodVertex(*it);
         firstGoodVertex = it;
         break;
     }
@@ -328,16 +211,16 @@ MuonShortExercise::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         if (fabs(it->eta()) > 2.5) continue;
         if (it->pt() < 20) continue;
 
-        MuonParentage parentage = MuonParentage::NOT_A_MUON;
+        mse::MuonParentage parentage = mse::MuonParentage::NOT_A_MUON;
         int momid = 0;
-        const pat::PackedGenParticle matchedPackedGenParticle = getMatchedGenParticle(*it, gpcol);        
+        const pat::PackedGenParticle matchedPackedGenParticle = mse::getMatchedGenParticle(*it, gpcol);        
         if (abs(matchedPackedGenParticle.pdgId()) == 13)
         {
-            const reco::GenParticle momgp = getMotherPacked(matchedPackedGenParticle);
+            const reco::GenParticle momgp = mse::getMotherPacked(matchedPackedGenParticle);
             if (momgp.pdgId() != 0)
             {
                 momid = momgp.pdgId();
-                parentage = getParentType(momgp);                
+                parentage = mse::getParentType(momgp);                
             }
         }
 
@@ -363,7 +246,7 @@ MuonShortExercise::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
         }
         
         // with parentage of muon in hand, let's fill some histograms
-        if (parentage < MuonParentage::LF && parentage > MuonParentage::LF)
+        if (parentage < mse::MuonParentage::LF && parentage > mse::MuonParentage::LF)
         // if (parentage < MuonParentage::LF)
             printf("pt, eta, pdgId, momId, parentage: %4.2f, %4.2f, %d, %d, %d\n", it->pt(), it->eta(), it->pdgId(), momid, parentage);
     }
