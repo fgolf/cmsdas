@@ -235,13 +235,13 @@ MuonShortExercise::analyze(const edm::Event& iEvent, const edm::EventSetup& iSet
 
         if (it->isIsolationValid())
         {
-            reco::MuonPFIsolation pfR03 = it->pfIsolationR03();
-            h_chiso[parentage]->Fill(std::min(pfR03.sumChargedHadronPt, (float)9.9));
-            h_nhiso[parentage]->Fill(std::min(pfR03.sumNeutralHadronEt, (float)9.9));
-            h_emiso[parentage]->Fill(std::min(pfR03.sumPhotonEt, (float)9.9));
-            h_puiso[parentage]->Fill(std::min(pfR03.sumPUPt, (float)9.9));
+            reco::MuonPFIsolation pfR04 = it->pfIsolationR04();
+            h_chiso[parentage]->Fill(std::min(pfR04.sumChargedHadronPt, (float)9.9));
+            h_nhiso[parentage]->Fill(std::min(pfR04.sumNeutralHadronEt, (float)9.9));
+            h_emiso[parentage]->Fill(std::min(pfR04.sumPhotonEt, (float)9.9));
+            h_puiso[parentage]->Fill(std::min(pfR04.sumPUPt, (float)9.9));
 
-            double coriso = pfR03.sumChargedHadronPt + std::max(0., pfR03.sumNeutralHadronEt+pfR03.sumPhotonEt-0.5*pfR03.sumPUPt);
+            double coriso = pfR04.sumChargedHadronPt + std::max(0., pfR04.sumNeutralHadronEt+pfR04.sumPhotonEt-0.5*pfR04.sumPUPt);
             h_coriso[parentage]->Fill(std::min(coriso/it->pt(), 0.299));
         }
         
